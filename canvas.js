@@ -1,13 +1,31 @@
 const canvas = document.querySelector('canvas');
 canvas.width = document.body.clientWidth;
 canvas.height = window.innerHeight;
+window.addEventListener('resize', () => {
+    canvas.width = document.body.clientWidth;
+    canvas.height = window.innerHeight;
+    init();
+});
+
+const mouse = {
+    x: undefined,
+    y: undefined
+};
+window.addEventListener('mousemove', (event) => {
+    mouse.x = event.x;
+    mouse.y = event.y;
+});
 
 // c = context
 let c = canvas.getContext('2d');
 
 class Bubble {
-    constructor(radius, x, y, dx, dy, color) {
-        this.radius = radius
+    constructor(baseRadius, hoverRadius, x, y, dx, dy, color) {
+        this.radius = {
+            base: baseRadius,
+            hover: hoverRadius,
+            current: baseRadius
+        };
         this.x = x;
         this.y = y;
         this.dx = dx;
@@ -20,50 +38,75 @@ class Bubble {
     }
     draw() {
         c.beginPath();
-        c.strokeStyle = this.color;
+        c.fillStyle = this.color;
         c.arc(
             this.x, 
             this.y, 
-            this.radius, 
+            this.radius.current, 
             this.angles.start, 
             this.angles.end, 
             false
         );
-        c.stroke();
+        c.fill();
+    }
+    hover() {
+        if (
+            Math.abs(this.x - mouse.x) < this.radius.hover &&
+            Math.abs(this.y - mouse.y) < this.radius.hover
+        ) {
+            if (this.radius.current < this.radius.hover) this.radius.current += 1;
+        } else if (this.radius.current > this.radius.base) this.radius.current -= 1;
     }
     move() {
-        if(this.x + this.radius > innerWidth || this.x - this.radius < 0) {
+        if (
+            this.x + this.radius.current > innerWidth ||
+            this.x - this.radius.current < 0
+        ) {
             this.dx = -this.dx;
         }
         this.x += this.dx;
-        if(this.y + this.radius > innerHeight || this.y - this.radius < 0) {
+        if (
+            this.y + this.radius.current > innerHeight ||
+            this.y - this.radius.current < 0
+        ) {
             this.dy = -this.dy;
         }
         this.y += this.dy;
+        this.hover();
         this.draw();
     }
 }
 
+const colors = [
+    '#BF4226',
+    '#F2913D',
+    '#F2CD5C',
+    '#251E40',
+    '#8C1B2F'
+];
 function randomColor() {
-    return '#'+Math.floor(Math.random()*16777215).toString(16);
+    return colors[Math.floor(Math.random()*4)];
 }
 
-const bubblesCollection = [];
+let bubblesCollection = [];
 
-for (let index = 0; index < 100; index++) {
-    const radius = 50;
-    const x = (Math.random() * (innerWidth - radius * 2)) + radius;
-    const y = (Math.random() * (innerHeight - radius * 2)) + radius;
-    const dx = 2 * Math.pow(-1, Math.floor(Math.random() * 2));
-    const dy = 2 * Math.pow(-1, Math.floor(Math.random() * 2));
-    const color = randomColor();
-    bubblesCollection.push(new Bubble(radius,x,y,dx,dy,color));
+function init() {
+    bubblesCollection = [];
+    const qty = window.innerWidth / 2;
+
+    for (let index = 0; index < qty; index++) {
+        const baseRadius = (Math.random() * 4) + 1;
+        const hoverRadius = 100;
+        const x = (Math.random() * (innerWidth - baseRadius * 2)) + baseRadius;
+        const y = (Math.random() * (innerHeight - baseRadius * 2)) + baseRadius;
+        const dx = 2 * Math.pow(-1, Math.floor(Math.random() * 2));
+        const dy = 2 * Math.pow(-1, Math.floor(Math.random() * 2));
+        const color = randomColor();
+        bubblesCollection.push(new Bubble(baseRadius,hoverRadius,x,y,dx,dy,color));
+    }
 }
-
-console.log(bubblesCollection);
 
 function animate() {
-    console.log('teste');
     requestAnimationFrame(animate);
     c.clearRect(0, 0, innerWidth, innerHeight);
     for (let index = 0; index < bubblesCollection.length; index++) {
@@ -71,4 +114,5 @@ function animate() {
     }
 }
 
+init();
 animate();
